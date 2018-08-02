@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="title_activity_bluetooth_scan">Exploración Bluetooth</string>
 	<string name="connected">Conectado</string>
@@ -473,10 +473,10 @@
 	<string name="if_the_phone_has_text_to_speech">Si el teléfono tiene capacidades de conversión de texto a voz se leerá cada nueva lectura.</string>
 	<string name="upload_logs">Cargar los registros</string>
 	<string name="DoubleDown">caída rápida </string>
-	<string name="SingleDown">cayendo</string>
-	<string name="FortyFiveDown">ligeramente decreciente</string>
-	<string name="Flat">consistente</string>
-	<string name="FortyFiveUp">aumentando levemente</string>
-	<string name="SingleUp">ascendente</string>
-	<string name="DoubleUp">aumentando rápidamente</string>
+	<string name="SingleDown">caída ligera</string>
+	<string name="FortyFiveDown">cae muy poco</string>
+	<string name="Flat">constante</string>
+	<string name="FortyFiveUp">aumenta muy poco</string>
+	<string name="SingleUp">aumento ligero</string>
+	<string name="DoubleUp">aumento rápido</string>
 </resources>
