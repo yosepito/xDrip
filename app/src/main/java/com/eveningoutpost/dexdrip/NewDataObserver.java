@@ -8,12 +8,17 @@ import com.eveningoutpost.dexdrip.ShareModels.BgUploader;
 import com.eveningoutpost.dexdrip.ShareModels.Models.ShareUploadPayload;
 import com.eveningoutpost.dexdrip.UtilityModels.Notifications;
 import com.eveningoutpost.dexdrip.UtilityModels.Pref;
+import com.eveningoutpost.dexdrip.UtilityModels.VehicleMode;
 import com.eveningoutpost.dexdrip.UtilityModels.pebble.PebbleUtil;
 import com.eveningoutpost.dexdrip.UtilityModels.pebble.PebbleWatchSync;
 import com.eveningoutpost.dexdrip.utils.BgToSpeech;
+
 import com.eveningoutpost.dexdrip.wearintegration.Amazfitservice;
 import com.eveningoutpost.dexdrip.wearintegration.ExternalStatusService;
 import com.eveningoutpost.dexdrip.wearintegration.WatchUpdaterService;
+
+
+import android.content.Context;
 
 import static com.eveningoutpost.dexdrip.Home.startWatchUpdaterService;
 
@@ -25,6 +30,7 @@ import static com.eveningoutpost.dexdrip.Home.startWatchUpdaterService;
 
 public class NewDataObserver {
 
+    Context context;
     private static final String TAG = "NewDataObserver";
 
     // TODO after restructuring so that the triggering is organized by data type,
@@ -37,9 +43,11 @@ public class NewDataObserver {
         sendToWear();
         sendToAmazfit();
         Notifications.start();
+
         uploadToShare(bgReading, is_follower);
         textToSpeech(bgReading, null);
         LibreBlock.UpdateBgVal(bgReading.timestamp, bgReading.calculated_value);
+
 
     }
 
@@ -54,7 +62,8 @@ public class NewDataObserver {
             }
             // send to pebble
             sendToPebble();
-            sendToAmazfit();
+            //send to amazfit
+           sendToAmazfit();
 
             // don't send via GCM if received via GCM!
             if (receivedLocally) {
@@ -75,9 +84,8 @@ public class NewDataObserver {
 
     // send data to Amazfit if enabled
     private static void sendToAmazfit() {
-        if (Pref.getBooleanDefaultFalse("pref_amazfit_enable_key")) {
-            JoH.startService(Amazfitservice.class);
-        }
+        if(Pref.getBoolean("pref_amazfit_enable_key", true)) {
+            Amazfitservice.start("xDrip_synced_SGV_data");}
     }
 
     // send to wear
@@ -95,7 +103,7 @@ public class NewDataObserver {
     // speak value
     private static void textToSpeech(BgReading bgReading, BestGlucose.DisplayGlucose dg) {
         //Text to speech
-        if (Pref.getBooleanDefaultFalse("bg_to_speech")) {
+        if (Pref.getBooleanDefaultFalse("bg_to_speech") || VehicleMode.shouldSpeak()) {
             if (dg == null) dg = BestGlucose.getDisplayGlucose();
             if (dg != null) {
                 BgToSpeech.speak(dg.mgdl, dg.timestamp, dg.delta_name);

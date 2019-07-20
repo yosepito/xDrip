@@ -163,7 +163,7 @@ public class BgGraphBuilder {
     public static double last_bg_estimate = -99999;
     private KeyStore keyStore = FastStore.getInstance();
 
-    private boolean showSMB = true;
+    private final boolean showSMB = Pref.getBoolean("show_smb_icons", true);
 
     public BgGraphBuilder(Context context) {
         this(context, new Date().getTime() + (60000 * 10));
@@ -1442,27 +1442,42 @@ public class BgGraphBuilder {
                 readings_lock.lock();
                 try {
                     // display treatment blobs and annotations
+                    long lastIconTimestamp = 0;
+                    int consecutiveCloseIcons = 0;
                     for (Treatments treatment : treatments) {
+
+                        if (!treatment.hasContent()) continue;
 
                         if (showSMB && treatment.likelySMB()) {
                             final Pair<Float, Float> yPositions = GraphTools.bestYPosition(bgReadings, treatment.timestamp, doMgdl, false, highMark, 10 + (100d * treatment.insulin));
-                            final PointValueExtended pv = new PointValueExtended(treatment.timestamp / FUZZER, yPositions.first); // TEST VALUES
-                            pv.setPlumbPos(GraphTools.yposRatio(yPositions.second, yPositions.first, 0.1f));
-                            BitmapLoader.loadAndSetKey(pv, R.drawable.triangle, 180);
-                            pv.setBitmapTint(getCol(X.color_smb_icon));
-                            pv.setBitmapScale((float) (0.5f + (treatment.insulin * 5f))); // 0.1U == 100% 0.2U = 150%
-                            pv.note = "SMB: " + treatment.insulin + "U" + (treatment.notes != null ? " " + treatment.notes : "");
-                            smbValues.add(pv);
-                            continue;
+                            if (yPositions.first > 0) {
+                                final PointValueExtended pv = new PointValueExtended(treatment.timestamp / FUZZER, yPositions.first); // TEST VALUES
+                                pv.setPlumbPos(GraphTools.yposRatio(yPositions.second, yPositions.first, 0.1f));
+                                BitmapLoader.loadAndSetKey(pv, R.drawable.triangle, 180);
+                                pv.setBitmapTint(getCol(X.color_smb_icon));
+                                pv.setBitmapScale((float) (0.5f + (treatment.insulin * 5f))); // 0.1U == 100% 0.2U = 150%
+                                pv.note = "SMB: " + JoH.qs(treatment.insulin, 2) + "U" + (treatment.notes != null ? " " + treatment.notes : "");
+                                smbValues.add(pv);
+                                continue;
+                            } else {
+                                UserError.Log.d(TAG, "Could not determine a good position to use for SMB");
+                            }
                         }
 
                         if (treatment.noteOnly()) {
                             final PointValue pv = NoteClassifier.noteToPointValue(treatment.notes);
                             if (pv != null) {
-                                final Pair<Float,Float> yPositions = GraphTools.bestYPosition(bgReadings, treatment.timestamp, doMgdl, false, highMark, 27d);
+                                final boolean tooClose = Math.abs(treatment.timestamp - lastIconTimestamp) < Constants.MINUTE_IN_MS * 6;
+                                if (tooClose) {
+                                    consecutiveCloseIcons++;
+                                } else {
+                                    consecutiveCloseIcons = 0;
+                                }
+                                final Pair<Float, Float> yPositions = GraphTools.bestYPosition(bgReadings, treatment.timestamp, doMgdl, false, highMark, 27d + (18d * consecutiveCloseIcons));
                                 pv.set(treatment.timestamp / FUZZER, yPositions.first);
                                 //pv.setPlumbPos(yPositions.second);
                                 iconValues.add(pv);
+                                lastIconTimestamp = treatment.timestamp;
                                 continue;
                             }
                         }
@@ -1479,12 +1494,12 @@ public class BgGraphBuilder {
                         if (treatment.insulin > 0) {
                             if (mylabel.length() > 0)
                                 mylabel = mylabel + System.getProperty("line.separator");
-                            mylabel = mylabel + (JoH.qs(treatment.insulin,2) + "u").replace(".0u", "u");
+                            mylabel = mylabel + (JoH.qs(treatment.insulin, 2) + "u").replace(".0u", "u");
                         }
                         if (treatment.carbs > 0) {
                             if (mylabel.length() > 0)
                                 mylabel = mylabel + System.getProperty("line.separator");
-                            mylabel = mylabel + (JoH.qs(treatment.carbs,1) + "g").replace(".0g", "g");
+                            mylabel = mylabel + (JoH.qs(treatment.carbs, 1) + "g").replace(".0g", "g");
                         }
                         pv.setLabel(mylabel); // standard label
                         //Log.d(TAG, "watchkeypad pv.mylabel: " + mylabel);
@@ -1659,18 +1674,18 @@ public class BgGraphBuilder {
                                     if (!iob_shown_already && (Math.abs(fuzzed_timestamp - end_time) < 5) && (iob.iob > 0)) {
                                         iob_shown_already = true;
                                         // show current iob
-                                      //  double position = 12.4 * bgScale; // this is for mmol - needs generic for mg/dl
-                                      //  if (Math.abs(predictedbg - position) < (2 * bgScale)) {
-                                      //      position = 7.0 * bgScale;
-                                      //  }
+                                        //  double position = 12.4 * bgScale; // this is for mmol - needs generic for mg/dl
+                                        //  if (Math.abs(predictedbg - position) < (2 * bgScale)) {
+                                        //      position = 7.0 * bgScale;
+                                        //  }
 
-                                       // PointValue iv = new PointValue((float) fuzzed_timestamp, (float) position);
+                                        // PointValue iv = new PointValue((float) fuzzed_timestamp, (float) position);
                                         DecimalFormat df = new DecimalFormat("#");
                                         df.setMaximumFractionDigits(2);
                                         df.setMinimumIntegerDigits(1);
-                                      //  iv.setLabel("IoB: " + df.format(iob.iob));
+                                        //  iv.setLabel("IoB: " + df.format(iob.iob));
                                         Home.updateStatusLine("iob", df.format(iob.iob));
-                                      //  annotationValues.add(iv); // needs to be different value list so we can make annotation nicer
+                                        //  annotationValues.add(iv); // needs to be different value list so we can make annotation nicer
 
                                     }
                                 }
@@ -1906,6 +1921,8 @@ public class BgGraphBuilder {
         line.setPointColor(ColorUtil.blendColor(Color.BLACK,Color.TRANSPARENT, 0.99f));
         line.setBitmapScale(1f);
         line.setBitmapLabels(true);
+        line.setBitmapLabelShadowColor(Color.WHITE);
+        line.setFullShadow(true);
         line.setBitmapCacheProvider(BitmapLoader.getInstance());
         lines.add(line);
         return lines;

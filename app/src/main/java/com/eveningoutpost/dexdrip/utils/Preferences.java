@@ -31,8 +31,10 @@ import android.text.TextUtils;
 import android.widget.BaseAdapter;
 import android.widget.Toast;
 
+import com.eveningoutpost.dexdrip.BasePreferenceActivity;
 import com.eveningoutpost.dexdrip.GcmActivity;
 import com.eveningoutpost.dexdrip.Home;
+import com.eveningoutpost.dexdrip.Models.DesertSync;
 import com.eveningoutpost.dexdrip.Models.JoH;
 import com.eveningoutpost.dexdrip.Models.Profile;
 import com.eveningoutpost.dexdrip.Models.UserError.ExtraLogTags;
@@ -91,7 +93,7 @@ import java.util.Map;
  * href="http://developer.android.com/guide/topics/ui/settings.html">Settings
  * API Guide</a> for more information on developing a Settings UI.
  */
-public class Preferences extends PreferenceActivity {
+public class Preferences extends BasePreferenceActivity {
     private static final String TAG = "jamorham PREFS";
     private static byte[] staticKey;
     private AllPrefsFragment preferenceFragment;
@@ -192,6 +194,7 @@ public class Preferences extends PreferenceActivity {
                 ExtraLogTags.readPreference(Pref.getStringDefaultBlank("extra_tags_for_logging"));
                 Toast.makeText(getApplicationContext(), "Loaded " + Integer.toString(changes) + " preferences from QR code", Toast.LENGTH_LONG).show();
                 PlusSyncService.clearandRestartSyncService(getApplicationContext());
+                DesertSync.settingsChanged(); // refresh
                 if (prefs.getString("dex_collection_method", "").equals("Follower")) {
                     PlusSyncService.clearandRestartSyncService(getApplicationContext());
                     GcmActivity.last_sync_request = 0;
@@ -909,6 +912,7 @@ public class Preferences extends PreferenceActivity {
                   final Context context = preference.getContext();
                   Boolean enabled = (boolean) newValue;
                    if (enabled==true) {
+
                        context.startService(new Intent(context, Amazfitservice.class));
 
                    }else {
@@ -962,6 +966,14 @@ public class Preferences extends PreferenceActivity {
                 XdripWebService.settingsChanged(); // refresh
                 return true;
             });
+
+            findPreference("desert_sync_enabled").setOnPreferenceChangeListener((preference, newValue) -> {
+                preference.getEditor().putBoolean(preference.getKey(), (boolean) newValue).apply(); // write early for method below
+                DesertSync.settingsChanged(); // refresh
+                return true;
+            });
+
+
 
             if (enableBF != null ) enableBF.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
                                                                               @Override
@@ -1287,6 +1299,17 @@ public class Preferences extends PreferenceActivity {
                //     } catch (Exception e) { //
                //     }
                // }
+
+                // remove master ip input if we are the master
+                if (Home.get_master()) {
+                    final PreferenceScreen desert_sync_screen = (PreferenceScreen) findPreference("xdrip_plus_desert_sync_settings");
+                    try {
+                        desert_sync_screen.removePreference(findPreference("desert_sync_master_ip"));
+
+                    } catch (Exception e) {
+                        //
+                    }
+                }
 
 
                 final PreferenceScreen g5_settings_screen = (PreferenceScreen) findPreference("xdrip_plus_g5_extra_settings");
@@ -1737,7 +1760,8 @@ public class Preferences extends PreferenceActivity {
                     }
 
                     if (preference.getKey().equals("dex_collection_method")) {
-                        CollectionServiceStarter.restartCollectionService(preference.getContext(), (String) newValue);
+                        //CollectionServiceStarter.restartCollectionService(preference.getContext(), (String) newValue);
+
                         if (newValue.equals("Follower")) {
                             // reset battery whenever changing collector type
                             AllPrefsFragment.this.prefs.edit().putInt("bridge_battery",0).apply();
@@ -1749,9 +1773,10 @@ public class Preferences extends PreferenceActivity {
                             }
                             GcmActivity.requestBGsync();
                         }
-                    } else {
-                        CollectionServiceStarter.restartCollectionService(preference.getContext());
+                    //} else {
+                    //    CollectionServiceStarter.restartCollectionService(preference.getContext());
                     }
+                    CollectionServiceStarter.restartCollectionServiceBackground();
                     return true;
                 }
             });

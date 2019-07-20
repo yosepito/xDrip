@@ -27,10 +27,10 @@ import com.eveningoutpost.dexdrip.R;
 import com.eveningoutpost.dexdrip.Services.SnoozeOnNotificationDismissService;
 import com.eveningoutpost.dexdrip.SnoozeActivity;
 import com.eveningoutpost.dexdrip.UtilityModels.pebble.PebbleWatchSync;
+import com.eveningoutpost.dexdrip.wearintegration.Amazfitservice;
 import com.eveningoutpost.dexdrip.eassist.AlertTracker;
 import com.eveningoutpost.dexdrip.wearintegration.WatchUpdaterService;
 import com.eveningoutpost.dexdrip.xdrip;
-
 import java.io.IOException;
 import java.util.Date;
 
@@ -113,6 +113,7 @@ public class AlertPlayer {
     final static int ALERT_PROFILE_MEDIUM = 3;
     final static int ALERT_PROFILE_VIBRATE_ONLY = 4;
     final static int ALERT_PROFILE_SILENT = 5;
+    public static boolean amazfitalarm_helper;
 
     // when ascending how many minutes since alert started do we wait before escalating
     final static int MAX_VIBRATING_MINUTES = 2;
@@ -134,10 +135,13 @@ public class AlertPlayer {
     }
 
     public synchronized void startAlert(Context ctx, boolean trendingToAlertEnd, AlertType newAlert, String bgValue) {
+
         startAlert(ctx, trendingToAlertEnd, newAlert, bgValue, Pref.getBooleanDefaultFalse("start_snoozed")); // for start snoozed by default!
+
     }
 
     public synchronized  void startAlert(Context ctx, boolean trendingToAlertEnd, AlertType newAlert, String bgValue , boolean start_snoozed)  {
+
         Log.d(TAG, "startAlert called, Threadid " + Thread.currentThread().getId());
         if (trendingToAlertEnd) {
             Log.d(TAG, "startAlert: This alert is trending to it's end will not do anything");
@@ -162,12 +166,17 @@ public class AlertPlayer {
         Log.d(TAG, "stopAlert: stop called ClearData " + ClearData + "  ThreadID " + Thread.currentThread().getId());
         if (ClearData) {
             ActiveBgAlert.ClearData();
+
         }
         if (clearIfSnoozeFinished) {
             ActiveBgAlert.ClearIfSnoozeFinished();
+
+
         }
         if (cancelNotification) {
             notificationDismiss(ctx);
+
+
         }
         if (mediaPlayer != null) {
             mediaPlayer.stop();
@@ -175,6 +184,8 @@ public class AlertPlayer {
             mediaPlayer = null;
         }
         revertCurrentVolume(ctx);
+
+
     }
 
     // only do something if an alert is active - only call from interactive
@@ -196,6 +207,10 @@ public class AlertPlayer {
         Snooze(ctx, repeatTime, true);
         if (Pref.getBooleanDefaultFalse("bg_notifications_watch") ) {
             startWatchUpdaterService(ctx, WatchUpdaterService.ACTION_SNOOZE_ALERT, TAG, "repeatTime", "" + repeatTime);
+        }
+        if (Pref.getBoolean("pref_amazfit_enable_key", false)&&Pref.getBoolean("pref_amazfit_BG_alert_enable_key", false))
+        {       Amazfitservice.start("xDrip_AlarmCancel");
+
         }
     }
 
@@ -243,7 +258,7 @@ public class AlertPlayer {
     }
 
 
-    // Check the state and alrarm if needed
+    // Check the state and alarm if needed
     public void ClockTick(Context ctx, boolean trendingToAlertEnd, String bgValue)
     {
         if (trendingToAlertEnd) {
@@ -271,6 +286,7 @@ public class AlertPlayer {
             
             VibrateNotifyMakeNoise(ctx, alert, bgValue, alert.override_silent_mode, minutesFromStartPlaying);
             AlertTracker.evaluate();
+
         }
 
     }
@@ -333,8 +349,8 @@ public class AlertPlayer {
             
         try {
             mediaPlayer.prepare();
-        } catch (IOException e) {
-            Log.e(TAG, "Caught exception preparing meidaPlayer", e);
+        } catch (IllegalStateException | IOException e) {
+            Log.e(TAG, "Caught exception preparing mediaPlayer", e);
             return;
         } catch (NullPointerException e) {
             Log.e(TAG,"Possible deep error in mediaPlayer", e);
@@ -515,6 +531,13 @@ public class AlertPlayer {
             builder.setVibrate(new long[]{1, 0});
         }
         Log.ueh("Alerting", content);
+        //send alert to amazfit
+        if (Pref.getBoolean("pref_amazfit_enable_key", false)&&Pref.getBoolean("pref_amazfit_BG_alert_enable_key", false))
+        {       Amazfitservice.start("xDrip_Alarm",alert.name,alert.default_snooze);
+
+        }
+
+
         final NotificationManager mNotifyMgr = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         //mNotifyMgr.cancel(Notifications.exportAlertNotificationId); // this appears to confuse android wear version 2.0.0.141773014.gms even though it shouldn't - can we survive without this?
         mNotifyMgr.notify(Notifications.exportAlertNotificationId, XdripNotificationCompat.build(builder));
@@ -525,6 +548,9 @@ public class AlertPlayer {
                 JoH.startService(PebbleWatchSync.class);
             }
         }
+
+
+
 
         // speak alert
         if (Pref.getBooleanDefaultFalse("speak_alerts")) {
@@ -559,4 +585,5 @@ public class AlertPlayer {
         // unknown mode, not sure let's play just in any case.
         return true;
     }
+
 }

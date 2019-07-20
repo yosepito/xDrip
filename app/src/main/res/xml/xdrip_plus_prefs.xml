@@ -381,6 +381,11 @@
                 android:title="G6 Prediction" />
             <CheckBoxPreference
                 android:defaultValue="true"
+                android:key="show_smb_icons"
+                android:summary="Declutter graph with treatment icons for small boluses"
+                android:title="Show micro bolus icons" />
+            <CheckBoxPreference
+                android:defaultValue="true"
                 android:key="show_medtrum_secondary"
                 android:summary="Show alternate glucose dots"
                 android:title="Medtrum Secondary" />
@@ -664,6 +669,41 @@
                     android:summary="@string/only_accept_same_network"
                     android:title="@string/wifi_name_must_match" />
             </PreferenceScreen>
+            <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+                android:key="xdrip_plus_desert_sync_settings"
+                android:summary="Off-Grid following"
+                android:icon="@drawable/desert_sync"
+                android:title="Desert Sync">
+                <SwitchPreference
+                    android:defaultValue="false"
+                    android:key="desert_sync_enabled"
+                    android:summary="Enabled local non-internet sync facilities"
+                    android:switchTextOff="@string/short_off_text_for_switches"
+                    android:switchTextOn="@string/short_on_text_for_switches"
+                    android:title="Desert Sync" />
+                <EditTextPreference
+                    android:defaultValue=""
+                    android:dependency="desert_sync_enabled"
+                    android:key="desert_sync_master_ip"
+                    android:maxLength="15"
+                    android:title="Master IP address" />
+                <Preference
+                    android:key="send_sync_show_qr"
+                    android:dependency="desert_sync_enabled"
+                    android:summary="Barcode for followers to scan to auto-configure them"
+                    android:title="Show QR Code">
+                    <intent
+                        android:action="xdrip_plus_desert_sync_qr"
+                        android:targetClass="com.eveningoutpost.dexdrip.utils.DisplayQRCode"
+                        android:targetPackage="@string/local_target_package" />
+                </Preference>
+                <CheckBoxPreference
+                    android:defaultValue="false"
+                    android:key="desert_use_https"
+                    android:summary="Add another layer of encryption for shared networks, eg public wifi"
+                    android:title="Use HTTPS" />
+
+            </PreferenceScreen>
             <CheckBoxPreference
                 android:defaultValue="false"
                 android:key="disable_all_sync"
@@ -704,18 +744,45 @@
             android:title="@string/act_as_motion_master" />
         <SwitchPreference
             android:defaultValue="false"
-            android:dependency="motion_tracking_enabled"
             android:key="vehicle_mode_enabled"
             android:summary="@string/vehicle_motion_extras"
             android:switchTextOff="@string/short_off_text_for_switches"
             android:switchTextOn="@string/short_on_text_for_switches"
             android:title="@string/enable_vehicle_mode" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:dependency="vehicle_mode_enabled"
+            android:key="vehicle_mode_via_car_audio"
+            android:summary="@string/automatically_enable_when_connected_to_car_bluetooth"
+            android:switchTextOff="@string/short_off_text_for_switches"
+            android:switchTextOn="@string/short_on_text_for_switches"
+            android:title="@string/detect_car_audio" />
+        <Preference
+            android:dependency="vehicle_mode_enabled"
+            android:key="learn_this_audio_device"
+            android:summary="@string/tap_to_set_current_car_audio_device"
+            android:title="@string/learn_current_car_audio">
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:targetClass="com.eveningoutpost.dexdrip.ui.activities.SelectAudioDevice"
+                android:targetPackage="@string/local_target_package">
+                <extra
+                    android:name="none"
+                    android:value="none" />
+            </intent>
+        </Preference>
         <CheckBoxPreference
             android:defaultValue="false"
             android:dependency="vehicle_mode_enabled"
             android:key="raise_low_limit_in_vehicle_mode"
             android:summary="@string/increase_low_alarms_vehicle_mode"
             android:title="@string/raise_low_threshold" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:dependency="vehicle_mode_enabled"
+            android:key="speak_readings_in_vehicle_mode"
+            android:title="@string/speak_readings"
+            android:summary="@string/enable_speak_readings_when_in_vehicle"/>
         <CheckBoxPreference
             android:defaultValue="true"
             android:dependency="vehicle_mode_enabled"

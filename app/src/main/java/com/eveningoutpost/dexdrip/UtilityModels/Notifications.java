@@ -48,6 +48,7 @@ import com.eveningoutpost.dexdrip.ui.NumberGraphic;
 import com.eveningoutpost.dexdrip.utils.DexCollectionType;
 import com.eveningoutpost.dexdrip.utils.PowerStateReceiver;
 import com.eveningoutpost.dexdrip.xdrip;
+import com.eveningoutpost.dexdrip.wearintegration.Amazfitservice;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -65,9 +66,9 @@ public class Notifications extends IntentService {
     public static boolean bg_notifications_watch;
     public static boolean bg_persistent_high_alert_enabled_watch;
     public static boolean bg_ongoing;
-    public static boolean bg_vibrate;
-    public static boolean bg_lights;
-    public static boolean bg_sound;
+    //public static boolean bg_vibrate;
+   // public static boolean bg_lights;
+   // public static boolean bg_sound;
     public static boolean bg_sound_in_silent;
     public static String bg_notification_sound;
 
@@ -155,9 +156,9 @@ public class Notifications extends IntentService {
         bg_notifications = prefs.getBoolean("bg_notifications", true);
         bg_notifications_watch = PersistentStore.getBoolean("bg_notifications_watch");
         bg_persistent_high_alert_enabled_watch = PersistentStore.getBoolean("persistent_high_alert_enabled_watch");
-        bg_vibrate = prefs.getBoolean("bg_vibrate", true);
-        bg_lights = prefs.getBoolean("bg_lights", true);
-        bg_sound = prefs.getBoolean("bg_play_sound", true);
+        //bg_vibrate = prefs.getBoolean("bg_vibrate", true);
+        //bg_lights = prefs.getBoolean("bg_lights", true);
+        //bg_sound = prefs.getBoolean("bg_play_sound", true);
         bg_notification_sound = prefs.getString("bg_notification_sound", "content://settings/system/notification_sound");
         bg_sound_in_silent = prefs.getBoolean("bg_sound_in_silent", false);
 
@@ -217,6 +218,7 @@ public class Notifications extends IntentService {
                 Log.d(TAG, "FileBasedNotifications - No active notifcation exists, stopping all alerts");
                 // No alert should work, Stop all alerts, but keep the snoozing...
                 AlertPlayer.getPlayer().stopAlert(context, false, true);
+
                 return;
             }
 
@@ -278,10 +280,12 @@ public class Notifications extends IntentService {
             // For now, we are stopping the old alert and starting a new one.
             Log.d(TAG, "Found a new alert, that is higher than the previous one will play it. " + newAlert.name);
             AlertPlayer.getPlayer().stopAlert(context, true, false);
+
             boolean trendingToAlertEnd = trendingToAlertEnd(context, true, newAlert);
             AlertPlayer.getPlayer().startAlert(context, trendingToAlertEnd, newAlert, EditAlertActivity.unitsConvert2Disp(doMgdl, calculated_value));
         } else {
             AlertPlayer.getPlayer().stopAlert(context, true, false);
+
         }
     }
 
@@ -323,6 +327,7 @@ public class Notifications extends IntentService {
         //boolean watchAlert = (Home.get_forced_wear() && bg_notifications_watch);
         if (unclearReading) {
             AlertPlayer.getPlayer().stopAlert(context, false, true);
+
         } else {
             FileBasedNotifications(context);
             BgReading.checkForDropAllert(context);
@@ -525,7 +530,7 @@ public class Notifications extends IntentService {
         }
     }
 
-    private Bitmap createWearBitmap(long start, long end) {
+    public Bitmap createWearBitmap(long start, long end) {
         return new BgSparklineBuilder(mContext)
                 .setBgGraphBuilder(new BgGraphBuilder(mContext))
                 .setStart(start)
@@ -576,7 +581,7 @@ public class Notifications extends IntentService {
         //final NotificationCompat.Builder b = new NotificationCompat.Builder(mContext, NotificationChannels.ONGOING_CHANNEL);
         //final NotificationCompat.Builder b = new NotificationCompat.Builder(mContext); // temporary fix until ONGOING CHANNEL is silent by default on android 8+
         final Notification.Builder b = new Notification.Builder(mContext); // temporary fix until ONGOING CHANNEL is silent by default on android 8+
-        //b.setOngoing(true); // TODO CHECK THIS!!
+        b.setOngoing(true); // TODO CHECK THIS!!
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             b.setVisibility(Pref.getBooleanDefaultFalse("public_notifications") ? Notification.VISIBILITY_PUBLIC : Notification.VISIBILITY_PRIVATE);
             b.setCategory(NotificationCompat.CATEGORY_STATUS);
@@ -969,6 +974,9 @@ public class Notifications extends IntentService {
             //mNotifyMgr.cancel(notificatioId);
             //Log.d(TAG, "Notify");
             Log.ueh("Other Alert",message);
+            if (Pref.getBoolean("pref_amazfit_enable_key", false)&&Pref.getBoolean("pref_amazfit_other_alert_enable_key", false))
+            {       Amazfitservice.start("xDrip_Otheralert",message,30);
+            }
             mNotifyMgr.notify(notificatioId, XdripNotificationCompat.build(mBuilder));
         }
     }

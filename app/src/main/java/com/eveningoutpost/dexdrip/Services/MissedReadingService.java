@@ -11,6 +11,7 @@ import android.preference.PreferenceManager;
 import com.eveningoutpost.dexdrip.Home;
 import com.eveningoutpost.dexdrip.Models.AlertType;
 import com.eveningoutpost.dexdrip.Models.BgReading;
+import com.eveningoutpost.dexdrip.Models.DesertSync;
 import com.eveningoutpost.dexdrip.Models.JoH;
 import com.eveningoutpost.dexdrip.Models.Reminder;
 import com.eveningoutpost.dexdrip.Models.Sensor;
@@ -24,6 +25,7 @@ import com.eveningoutpost.dexdrip.UtilityModels.Pref;
 import com.eveningoutpost.dexdrip.UtilityModels.pebble.PebbleUtil;
 import com.eveningoutpost.dexdrip.UtilityModels.pebble.PebbleWatchSync;
 import com.eveningoutpost.dexdrip.utils.DexCollectionType;
+import com.eveningoutpost.dexdrip.wearintegration.Amazfitservice;
 import com.eveningoutpost.dexdrip.wearintegration.WatchUpdaterService;
 import com.eveningoutpost.dexdrip.webservices.XdripWebService;
 import com.eveningoutpost.dexdrip.xdrip;
@@ -80,6 +82,7 @@ public class MissedReadingService extends IntentService {
             Reminder.processAnyDueReminders();
             BluetoothGlucoseMeter.immortality();
             XdripWebService.immortality(); //
+            DesertSync.pullAsEnabled();
 
             // TODO functionalize the actual checking
             bg_missed_alerts = Pref.getBoolean("bg_missed_alerts", false);
